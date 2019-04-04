@@ -16,7 +16,7 @@ setup(
     author='Peter1010',
     author_email='peter1010@localnet',
     license='GPL',
-    package_dir={'test_toolkit': 'toolkit'},
+    package_dir={'test_toolkit': 'test_toolkit'},
     packages=['test_toolkit'],
     data_files=[],
 )
