@@ -10,6 +10,7 @@ __all__ = (
     "assertNotEqual",
     "assertTrue",
     "assertFalse",
+    "assertIs",
     "fail",
 
     "run"
@@ -83,6 +84,11 @@ def assertFalse(a, msg=None):
         raise TestException((a,), msg)
 
 
+def assertIs(a, b, msg=None):
+    if a is not b:
+        raise TestException((a, b), msg)
+
+
 def fail(msg=None):
     raise TestException((), msg)
 
@@ -93,85 +99,31 @@ def reportNoTraceback(err):
 #    traceback.print_stack()
 
 
-def gatherContext(failure_filename, failure_line_num, func_name, leadin):
-    failure_context = []
-    with open(failure_filename, "r") as fp:
-        for lineno, line in enumerate(fp):
-            line = line.rstrip()
-            idx = line.find(func_name)
-            if idx > 0:
-                if leadin > 0:
-                    failure_context = failure_context[-leadin:] + [line]
-                else:
-                    failure_context = [line]
-            else:
-                if line:
-                    failure_context.append(line)
-            if lineno >= failure_line_num-1:
-                break
-    failure_context = [x.expandtabs(4) for x in failure_context]
-    max_line = max(len(x) for x in failure_context)
-    indent = min(len(x) - len(x.lstrip()) for x in failure_context)
-    print("+" + "-" * (max_line -indent+ 2) + "+")
-    for x in failure_context:
-        print("| " + x[indent:] + " " * (max_line - len(x)) + " |")
-    print("+" + "-" * (max_line -indent + 2) + "+")
-    print(indent)
-    return failure_context
 
-
-def gatherTestException(err, tb):
-    for filename, line_num, func_name, text in tb:
-        if os.path.samefile(filename, __file__):
-            continue
-        failure_filename = filename
-        failure_line_num = line_num
+def gatherTestException(err, func_name):
     msg = err.args[1]
     args = err.args[0]
     if msg is None: 
         msg = ""
     if len(args) >= 2:
-        failure_test = "%s(%s, %s) FAILED, %s" % (func_name, str(args[0]), str(args[1]), msg)
-        leadin = 0
+        failure_test = "%s(%s, %s), %s" % (func_name, str(args[0]), str(args[1]), msg)
     elif len(args) >= 1:
-        failure_test = "%s(%s) FAILED, %s" % (func_name, str(args[0]), msg)
-        leadin = 0
+        failure_test = "%s(%s), %s" % (func_name, str(args[0]), msg)
     else:
         failure_test = "%s(), %s" % (func_name, msg)
-        leadin = 3
-    print(failure_test)
-    failure_context = gatherContext(failure_filename, failure_line_num, func_name, leadin)
-    failure_location = "in '%s' at line %i" % (failure_filename, failure_line_num)
-    print(failure_location)
-    for line in failure_context:
-        print(line)
-    return failure_test, failure_location, failure_context
+    return failure_test
 
 
-def gatherAssertException(err, tb):
-    for filename, line_num, func_name, text in tb:
-        if os.path.samefile(filename, __file__):
-            continue
-        failure_filename = filename
-        failure_line_num = line_num
+def gatherAssertException(err, func_name):
     msg = err.args[0]
     if msg is None: 
         msg = ""
     failure_test = "assert False, %s" % (msg)
-    leadin = 0
-    print(failure_test)
-    failure_context = gatherContext(failure_filename, failure_line_num, "assert", 0)
-    failure_location = "in '%s' at line %i" % (failure_filename, failure_line_num)
-    print(failure_location)
-    for line in failure_context:
-        print(line)
-    return failure_test, failure_location, failure_context
+    return failure_test
 
 
-def gatherOtherException(err, tb):
-    print("Something...")
-    for filename, line_num, func_name, text in tb:
-        print(filename, line_num, func_name, text) 
+def gatherOtherException(err):
+    return str(err)
 
 
 class TestRunner(object):
@@ -190,16 +142,29 @@ class TestRunner(object):
             return
         self.state = self.FAILED
         typ, value, tb = sys.exc_info()
+        print()
+        print("+-- FAILURE DETECTED! - back trace is ------")
         if tb is None:
             reportNoTraceback(err)
         else:
             tb = traceback.extract_tb(tb)
+            indent = " "
+            for filename, line_num, func_name, text in tb:
+                if os.path.samefile(filename, __file__):
+                    continue
+                print("|%sat line %i in  '%s'" % (indent, line_num, filename)) 
+                print("|%s--> '%s'" % (indent, text))
+                indent += "  "
+            print("+-- Reason --")
+ 
             if isinstance(err, TestException):
-                gatherTestException(err, tb)
+                failure_test = gatherTestException(err, func_name)
             elif isinstance(err, AssertionError):
-                gatherAssertException(err, tb)
+                failure_test = gatherAssertException(err, func_name)
             else:
-                gatherOtherException(err, tb)
+                failure_test = gatherOtherException(err)
+            print("| %s" % failure_test)
+            print("+-------------------------------")
 
 
     def createObj(self):
@@ -254,13 +219,16 @@ class SuiteRunner(object):
     def switchSuites(self, suite_class):
         pass
 
+    def get_env(self):
+        return {}
+
 
 def run(name = None):
     if name is None:
         names = _test_classes.keys()
     else:
         names = [name]
-    suiteRunner = SuiteRunner()
+    suite_runner = SuiteRunner()
     for name in names:
         print("Running test case '%s'" % name)
         suite, test_class = _test_classes[name]
