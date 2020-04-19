@@ -1,243 +1,175 @@
-import sys
-import os
-import traceback
+"""
+Tool Kit for writing tests
+"""
 
 __all__ = (
     "TestCase",
     "TestSuite",
 
-    "assertEqual",
-    "assertNotEqual",
-    "assertTrue",
-    "assertFalse",
-    "assertIs",
+    "assert_eq",
+    "assert_ne",
+    "assert_true",
+    "assert_false",
+    "assert_is",
     "fail",
 
     "run"
 )
 
-
-_test_classes = {}
-_test_suites = {}
-
-
-def add_test(name, suite, test_class):
-    _test_classes[name] = (suite, test_class)
-    
-
-def add_suite(name, suite_class):
-    _test_suites[name] = suite_class
-
+from . import runner
+from . import report
 
 class TestCase(object):
-
-    def __init__(self, name=None, suite=None):
+    """
+    Decorator for a test case class
+    """
+    def __init__(self, name_or_func=None, suite=None):
         self.suite_name = suite
-        if callable(name):
-            self.test_name = name.__name__
-            add_test(self.test_name, self.suite_name, name)
+        if callable(name_or_func):
+            self.test_name = name_or_func.__name__
+            runner.Test_items.add_test(self.test_name, self.suite_name, name_or_func)
         else:
-            self.test_name = name
+            self.test_name = name_or_func
 
     def __call__(self, test_class):
+        """Only called if decorating a class
+
+        Args:
+            test_class (object) : The Class to be used as a test case
+        """
         if self.test_name is None:
             self.test_name = test_class.__name__
-        add_test(self.test_name, self.suite_name, test_class)
+        runner.Test_items.add_test(self.test_name, self.suite_name, test_class)
 
 
 class TestSuite(object):
-
-    def __init__(self, name=None):
-        if callable(name):
-            self.suite_name = name.__name__
-            add_suite(self.suite_name, name)
+    """
+    Decorator for a test suite class
+    """
+    def __init__(self, name_or_func=None):
+        if callable(name_or_func):
+            self.suite_name = name_or_func.__name__
+            runner.Test_items.add_suite(self.suite_name, name_or_func)
         else:
-            self.suite_name = suite
+            self.suite_name = name_or_func
 
     def __call__(self, suite_class):
+        """Only called if decorating a class
+
+        Args:
+            suite_class (object) : The Class to be used as a test suite
+        """
         if self.suite_name is None:
             self.suite_name = suite_class.__name__
-        add_suite(self.suite_name, suite_class)
+        runner.Test_items.add_suite(self.suite_name, suite_class)
 
 
-class TestException(Exception):
-    pass
+def assert_eq(arg1, arg2, msg=None):
+    """Given that __eq__ can be overloaded, we must
+    explicitly use the == operator
+
+    Args:
+        arg1 (object) : Argument 1
+        arg2 (object) : Argument 2
+        msg (string): Message to print when it fails
+
+    Raises:
+        report.TestException
+    """
+    good = bool(arg1 == arg2)
+    if not good:
+        raise report.TestException((arg1, arg2), msg)
 
 
-def assertEqual(a, b, msg=None):
-    if not(a == b):
-        raise TestException((a, b), msg)
+def assert_ne(arg1, arg2, msg=None):
+    """Given that __ne__ can be overloaded, we must
+    explicitly use the != operator
+
+    Args:
+        arg1 (object) : Argument 1
+        arg2 (object) : Argument 2
+        msg (string): Message to print when it fails
+
+    Raises:
+        report.TestException
+    """
+    good = bool(arg1 != arg2)
+    if not good:
+        raise report.TestException((arg1, arg2), msg)
 
 
-def assertNotEqual(a, b, msg=None):
-    if not(a != b):
-        raise TestException((a, b), msg)
+def assert_true(arg1, msg=None):
+    """Check if arg1 is true
+
+    Args:
+        arg1 (object) : Argument 1
+        msg (string): Message to print when it fails
+
+    Raises:
+        report.TestException
+    """
+    if not arg1:
+        raise report.TestException((arg1,), msg)
 
 
-def assertTrue(a, msg=None):
-    if not (a):
-        raise TestException((a,), msg)
-    
+def assert_false(arg1, msg=None):
+    """Check if arg1 is false
 
-def assertFalse(a, msg=None):
-    if a:
-        raise TestException((a,), msg)
+    Args:
+        arg1 (object) : Argument 1
+        msg (string): Message to print when it fails
+
+    Raises:
+        report.TestException
+    """
+    if arg1:
+        raise report.TestException((arg1,), msg)
 
 
-def assertIs(a, b, msg=None):
-    if a is not b:
-        raise TestException((a, b), msg)
+def assert_is(arg1, arg2, msg=None):
+    """Check if arg1 is arg2
+
+    Args:
+        arg1 (object) : Argument 1
+        arg2 (object) : Argument 2
+        msg (string): Message to print when it fails
+
+    Raises:
+        report.TestException
+    """
+    if arg1 is not arg2:
+        raise report.TestException((arg1, arg2), msg)
 
 
 def fail(msg=None):
-    raise TestException((), msg)
+    """Raises the exception
+
+    Args:
+        msg (string): Message to print when it fails
+
+    Raises:
+        report.TestException
+    """
+    raise report.TestException((), msg)
 
 
-def reportNoTraceback(err):
-    print(err)
-#    print(err)
-#    traceback.print_stack()
+def run(test_name=None):
+    """Run a test
 
-
-
-def gatherTestException(err, func_name):
-    msg = err.args[1]
-    args = err.args[0]
-    if msg is None: 
-        msg = ""
-    if len(args) >= 2:
-        failure_test = "%s(%s, %s), %s" % (func_name, str(args[0]), str(args[1]), msg)
-    elif len(args) >= 1:
-        failure_test = "%s(%s), %s" % (func_name, str(args[0]), msg)
+    Args:
+        test_name (string): Name of the test
+    """
+    runner.Test_items.check_consistancy()
+    if test_name is None:
+        names = runner.Test_items.get_all_test_names()
     else:
-        failure_test = "%s(), %s" % (func_name, msg)
-    return failure_test
-
-
-def gatherAssertException(err, func_name):
-    msg = err.args[0]
-    if msg is None: 
-        msg = ""
-    failure_test = "assert False, %s" % (msg)
-    return failure_test
-
-
-def gatherOtherException(err):
-    return str(err)
-
-
-class TestRunner(object):
-    STARTED = 1
-    FAILED = 2
-
-    def __init__(self, name, test_class, env):
-        self.name = name
-        self.test_class = test_class
-        self.state = self.STARTED
-        self.env = env
-
-
-    def reportFailure(self, err):
-        if self.state == self.FAILED:
-            return
-        self.state = self.FAILED
-        typ, value, tb = sys.exc_info()
-        print()
-        print("+-- FAILURE DETECTED! - back trace is ------")
-        if tb is None:
-            reportNoTraceback(err)
-        else:
-            tb = traceback.extract_tb(tb)
-            indent = " "
-            for filename, line_num, func_name, text in tb:
-                if os.path.samefile(filename, __file__):
-                    continue
-                print("|%sat line %i in  '%s'" % (indent, line_num, filename)) 
-                print("|%s--> '%s'" % (indent, text))
-                indent += "  "
-            print("+-- Reason --")
- 
-            if isinstance(err, TestException):
-                failure_test = gatherTestException(err, func_name)
-            elif isinstance(err, AssertionError):
-                failure_test = gatherAssertException(err, func_name)
-            else:
-                failure_test = gatherOtherException(err)
-            print("| %s" % failure_test)
-            print("+-------------------------------")
-
-
-    def createObj(self):
-        args = 0
-        if hasattr(self.test_class, ".__init__"):
-            if hasattr(self.test_class.__init__, "__code__"):
-                args = self.test_class.__init__.__code__.co_argcount - 1
-        elif hasattr(self.test_class, "__code__"):
-            args = self.test_class.__code__.co_argcount
-        try:
-            if args > 0:
-                test_obj = self.test_class(self.env)
-            else:
-                test_obj = self.test_class()
-        except Exception as err:
-            self.reportFailure(err)
-            test_obj = None
-        return test_obj
-
-
-    def runMethod(self, test_obj, name):
-        if hasattr(test_obj, name):
-            func = getattr(test_obj, name)
-        else:
-            func = None
-        if func:
-            try:
-                if func.__code__.co_argcount > 1:
-                    func(self.env)
-                else:
-                    func()
-            except Exception as err:
-                self.reportFailure(err)
-
-
-    def run(self):
-        test_obj = self.createObj()
-        if test_obj:
-            for methodName in ("SetUp", "setUp", "setup", "run", "Run"):
-                self.runMethod(test_obj, methodName)
-                if self.state == self.FAILED:
-                    break
-            for methodName in ("TearDown", "tearDown", "teardown"):
-                self.runMethod(test_obj, methodName)
-            try:
-                del test_obj
-            except Exception as err:
-                self.reportFailure(err)
-
-class SuiteRunner(object):
-
-    def switchSuites(self, suite_class):
-        pass
-
-    def get_env(self):
-        return {}
-
-
-def run(name = None):
-    if name is None:
-        names = _test_classes.keys()
-    else:
-        names = [name]
-    suite_runner = SuiteRunner()
+        names = [test_name]
+    suite_runner = runner.SuiteRunner()
     for name in names:
         print("Running test case '%s'" % name)
-        suite, test_class = _test_classes[name]
-        if suite != None:
-            suite_class = _test_suites[suite]
-        else:
-            suite_class = None
-        suite_runner.switchSuites(suite_class)
-        runner = TestRunner(name, test_class, suite_runner.get_env())
-        runner.run()
-    suite_runner.switchSuites(None)
+        suite_class, test_class = runner.Test_items.get_test(name)
+        suite_runner.switch_suites(suite_class)
+        test_run = runner.TestRunner(name, test_class, suite_runner)
+        test_run.run()
+    suite_runner.switch_suites(None)
 

@@ -16,13 +16,13 @@ def Test3():
 
 
 @TestCase("Test4")
-class mytest(object):
+class Mytest(object):
 
     def run(self):
         print("Test4::run")
         a = 10
         b = 11
-        assertEqual(a, 
+        assert_eq(a, 
                 b, 
                 "failed")
 
@@ -38,7 +38,7 @@ class Test5():
 
     def run(self, env):
         print("Test5::run")
-        assertEqual(env["CFG"], 13)
+        assert_eq(env["CFG"], 13)
 
     def tearDown(self, env):
         print("Test5::tearDown")
@@ -48,7 +48,7 @@ class Test5():
         print("Test5::del")
 
 @TestCase("Test6", "Suite1")
-class myOtherTest:
+class MyOtherTest:
     def run(self, env):
         raise RuntimeError("pooh")
 #        fail("test")
