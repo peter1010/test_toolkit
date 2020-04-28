@@ -153,23 +153,24 @@ def fail(msg=None):
     raise report.TestException((), msg)
 
 
-def run(test_name=None):
+def run(test_name=None, env=None):
     """Run a test
 
     Args:
         test_name (string): Name of the test
+        env (dict): Dictionary of environment variables
     """
     runner.Test_items.check_consistancy()
     if test_name is None:
         names = runner.Test_items.get_all_test_names()
     else:
         names = [test_name]
-    suite_runner = runner.SuiteRunner()
+    suite_runner = runner.SuiteRunner(env)
     for name in names:
         print("Running test case '%s'" % name)
-        suite_class, test_class = runner.Test_items.get_test(name)
-        suite_runner.switch_suites(suite_class)
+        suite_name, suite_class, test_class = runner.Test_items.get_test(name)
+        suite_runner.switch_suites(suite_name, suite_class)
         test_run = runner.TestRunner(name, test_class, suite_runner)
         test_run.run()
-    suite_runner.switch_suites(None)
+    suite_runner.switch_suites(None, None)
 

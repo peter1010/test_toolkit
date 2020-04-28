@@ -484,7 +484,7 @@ signature-mutators=
 allow-any-import-level=
 
 # Allow wildcard imports from modules that define __all__.
-allow-wildcard-with-all=no
+allow-wildcard-with-all=yes
 
 # Analyse import fallback blocks. This can be used to support both Python 2 and
 # 3 compatible code, which means that the block might have code that exists
@@ -555,7 +555,6 @@ min-public-methods=2
 # List of method names used to declare (i.e. assign) instance attributes.
 defining-attr-methods=__init__,
                       __new__,
-                      setUp,
                       __post_init__
 
 # List of member names, which should be excluded from the protected access
