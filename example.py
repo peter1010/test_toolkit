@@ -1,22 +1,27 @@
 from test_toolkit import *
 
-@TestCase("Test1")
-def func(env):
+
+@TestCase
+def Test1(env):
+    """Test that 'assert False' works as expected"""
     print("-- Test1:")
     assert False, "Wibble"
 
-@TestCase("Test2")
-def func(env):
+
+@TestCase
+def Test2(env):
     print("-- Test2:")
+
 
 @TestCase
 def Test3():
+    """Test that 'fail' works as expected"""
     print("-- Test3:")
     fail("Wobble")
 
 
-@TestCase("Test4")
-class Mytest(object):
+@TestCase
+class Test4(object):
 
     def run(self):
         print("Test4::run")
@@ -47,12 +52,6 @@ class Test5():
     def __del__(self):
         print("Test5::del")
 
-@TestCase("Test6", "Suite1")
-class MyOtherTest:
-    def run(self, env):
-        raise RuntimeError("pooh")
-#        fail("test")
-
 @TestSuite
 class Suite1:
     def setUp(self, env):
@@ -60,6 +59,13 @@ class Suite1:
 
     def tearDown(self, env):
         del env["BING"]
+
+
+@TestCase(Suite1)
+class Test6:
+    def run(self, env):
+        raise RuntimeError("pooh")
+#        fail("test")
 
 
 def main():

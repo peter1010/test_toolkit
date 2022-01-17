@@ -76,10 +76,9 @@ class TestItems(object):
 
     def __init__(self):
         self._test_items = {}
-        self._test_suites = {}
 
 
-    def add_test(self, name, suite, test_class):
+    def add_test(self, suite_class, test_class):
         """Add a test object to list of test items
 
         Args:
@@ -90,24 +89,10 @@ class TestItems(object):
         Raises:
             RuntimeError: When more than one test with same name
         """
+        name = test_class.__name__
         if name in self._test_items:
             raise RuntimeError("More than one test with same name, '%s'" % name)
-        self._test_items[name] = TestItem(suite, test_class)
-
-
-    def add_suite(self, name, suite_class):
-        """Add a suite object to list of suite items
-
-        Args:
-            name (string): Name of the Suite
-            suite_class (callable) : The suite (a class or function)
-
-        Raises:
-            RuntimeError: Duplicate suite names
-        """
-        if name in self._test_suites:
-            raise RuntimeError("More than one suite with same name, '%s'" % name)
-        self._test_suites[name] = suite_class
+        self._test_items[name] = TestItem(suite_class, test_class)
 
 
     def get_all_test_names(self):
@@ -117,18 +102,6 @@ class TestItems(object):
             list: List of names
         """
         return self._test_items.keys()
-
-
-    def check_consistancy(self):
-        """Check consistancy of the test items
-        """
-        avail_suite_names = set(self._test_suites.keys())
-        used_suite_names = set()
-        for _name, test_item in self._test_items.items():
-            suite_name = test_item.get_suite_name()
-            if suite_name is not None:
-                used_suite_names.add(suite_name)
-        assert avail_suite_names == used_suite_names
 
 
     def get_test(self, name):
@@ -143,11 +116,11 @@ class TestItems(object):
             TestClass : The Test Case
         """
         test_item = self._test_items[name]
-        suite_name = test_item.get_suite_name()
-        if suite_name is not None:
-            suite_class = self._test_suites[suite_name]
+        suite_class = test_item.get_suite_name()
+        if suite_class is not None:
+            suite_name = suite_class.__name__
         else:
-            suite_class = None
+            suite_name = None
         return suite_name, suite_class, test_item.get_test_class()
 
 

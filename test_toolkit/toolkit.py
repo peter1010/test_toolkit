@@ -23,46 +23,40 @@ class TestCase(object):
     """
     Decorator for a test case class
     """
-    def __init__(self, name_or_func=None, suite=None):
-        self.suite_name = suite
-        if callable(name_or_func):
-            self.test_name = name_or_func.__name__
-            runner.Test_items.add_test(self.test_name, self.suite_name, name_or_func)
-        else:
-            self.test_name = name_or_func
+    def __init__(self, suite_or_func):
+        """
+        This is called when decorator is used. The argument depends on 
+        if @TestCase or @TestCase(suite) is used. In the first case 
+        the argument is the function to wrap. In the second case the
+        argument is the suite and then __call_ is called
+        """
+        assert callable(suite_or_func)
 
-    def __call__(self, test_class):
+        if hasattr(suite_or_func, "__name__"):
+            runner.Test_items.add_test(None, suite_or_func)
+        else:
+           self.suite = suite_or_func.wrapped_suite
+           del suite_or_func
+
+    def __call__(self, test_func):
         """Only called if decorating a class
 
         Args:
             test_class (object) : The Class to be used as a test case
         """
-        if self.test_name is None:
-            self.test_name = test_class.__name__
-        runner.Test_items.add_test(self.test_name, self.suite_name, test_class)
+        runner.Test_items.add_test(self.suite, test_func)
 
 
 class TestSuite(object):
     """
     Decorator for a test suite class
     """
-    def __init__(self, name_or_func=None):
-        if callable(name_or_func):
-            self.suite_name = name_or_func.__name__
-            runner.Test_items.add_suite(self.suite_name, name_or_func)
-        else:
-            self.suite_name = name_or_func
+    def __init__(self, suite):
+        assert callable(suite)
+        self.wrapped_suite = suite
 
-    def __call__(self, suite_class):
-        """Only called if decorating a class
-
-        Args:
-            suite_class (object) : The Class to be used as a test suite
-        """
-        if self.suite_name is None:
-            self.suite_name = suite_class.__name__
-        runner.Test_items.add_suite(self.suite_name, suite_class)
-
+    def __call__(self):
+        assert False
 
 def assert_eq(arg1, arg2, msg=None):
     """Given that __eq__ can be overloaded, we must
@@ -160,7 +154,6 @@ def run(test_name=None, env=None):
         test_name (string): Name of the test
         env (dict): Dictionary of environment variables
     """
-    runner.Test_items.check_consistancy()
     if test_name is None:
         names = runner.Test_items.get_all_test_names()
     else:
