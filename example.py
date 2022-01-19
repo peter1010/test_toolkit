@@ -1,75 +1,85 @@
-from test_toolkit import *
+"""
+Example Test script
+"""
+
+from test_toolkit import *	#pylint: disable=wildcard-import
 
 
 @TestCase
-def Test1(env):
-    """Test that 'assert False' works as expected"""
-    print("-- Test1:")
-    assert False, "Wibble"
+def test1(env):
+	"""Test that 'assert False' works as expected"""
+	print("-- Test1:")
+	assert False, "Wibble"
 
 
 @TestCase
-def Test2(env):
-    print("-- Test2:")
+def test2(env):
+	"""Test that passes"""
+	print("-- Test2:")
 
 
 @TestCase
-def Test3():
-    """Test that 'fail' works as expected"""
-    print("-- Test3:")
-    fail("Wobble")
+def test3():
+	"""Test that 'fail' works as expected"""
+	print("-- Test3:")
+	fail("Wobble")
 
 
 @TestCase
-class Test4(object):
+class Test4:
+	"""Test as a class"""
 
-    def run(self):
-        print("Test4::run")
-        a = 10
-        b = 11
-        assert_eq(a, 
-                b, 
-                "failed")
+	def __init__(self):
+		self.aaa = 10
+		self.bbb = 11
+
+	def run(self):
+		"""Run test that fails"""
+		print("Test4::run")
+		assert_eq(self.aaa,
+				self.bbb,
+				"failed")
 
 @TestCase
 class Test5():
+	"""Test as a class"""
 
-    def __init__(self):
-        print("Test5::init")
+	def __init__(self):
+		print("Test5::init")
 
-    def setUp(self, env):
-        print("Test5::setUp")
-        env["CFG"] = 12
+	def set_up(self, env):
+		print("Test5::setUp")
+		env["CFG"] = 12
 
-    def run(self, env):
-        print("Test5::run")
-        assert_eq(env["CFG"], 13)
+	def run(self, env):
+		print("Test5::run")
+		assert_eq(env["CFG"], 13)
 
-    def tearDown(self, env):
-        print("Test5::tearDown")
-        print(env["CFG"])
+	def tear_down(self, env):
+		print("Test5::tearDown")
+		print(env["CFG"])
 
-    def __del__(self):
-        print("Test5::del")
+	def __del__(self):
+		print("Test5::del")
 
 @TestSuite
 class Suite1:
-    def setUp(self, env):
-        env["BING"] = 3
+	def set_up(self, env):
+		env["BING"] = 3
 
-    def tearDown(self, env):
-        del env["BING"]
+	def tear_down(self, env):
+		del env["BING"]
 
 
 @TestCase(Suite1)
 class Test6:
-    def run(self, env):
-        raise RuntimeError("pooh")
+	def run(self, env):
+		raise RuntimeError("pooh")
 #        fail("test")
 
 
 def main():
-    print("running")
-    run()
+	print("running")
+	run()
 
 main()
