@@ -1,28 +1,31 @@
 pkgbase=test_toolkit
 pkgname=('test_toolkit')
 pkgver=1.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Test Toolkit"
 arch=('any')
 url="http:"
 license=('GPL')
-makedepends=('python')
+makedepends=('python' 'python-build')
 depends=('python')
 source=()
 
 pkgver() {
-    python ../setup.py -V
+	pushd .. > /dev/null
+    python version.py
+	popd > /dev/null
 }
 
-check() {
+build() {
     pushd ..
-    python setup.py check
+    python -m build
     popd
 }
 
+
 package() {
     pushd ..
-    python setup.py install --root=$pkgdir
+    pip install --root=$pkgdir --force-reinstall dist/Test_Toolkit-$pkgver-py3-none-any.whl
     popd
 }
 
